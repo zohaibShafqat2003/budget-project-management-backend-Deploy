@@ -37,12 +37,31 @@ const app = express();
 
 // Security middleware
 app.use(helmet());
-app.use(cors({
-  origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
+const cors = require('cors');
+
+// Dynamically allow frontend origin
+const allowedOrigins = [
+  'http://localhost:3000',
+  'https://budget-project-management-frontend-sigma.vercel.app',
+];
+
+const corsOptions = {
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true
-}));
+};
+
+app.use(cors(corsOptions));
+
+// Log CORS setup for debugging
+console.log('🔒 CORS configured with allowed origins:', allowedOrigins);
 
 // Basic middleware
 app.use(express.json());
