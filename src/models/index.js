@@ -217,15 +217,22 @@ RefreshToken.belongsTo(User, { as: 'user', foreignKey: 'userId' });
 
 // Sync database (only in development) - Simplified to use force sync
 const syncDatabase = async (force = false) => {
-  if (process.env.NODE_ENV === 'development') {
-    try {
-      console.log('🔄 Development mode: force-syncing database');
-      await sequelize.sync({ force: true });
-      console.log('✅ Database schema recreated');
-    } catch (error) {
-      console.error('Error syncing database:', error.message);
-      throw error;
-    }
+  try {
+    // Check if we should force sync (drop tables and recreate)
+    const shouldForceSync = force || process.env.FORCE_DB_SYNC === 'true';
+    
+    // Check if we're allowed to reset the database
+    const allowDbReset = process.env.ALLOW_DB_RESET === 'true';
+    
+    // Only allow force sync if explicitly allowed
+    const syncOptions = { force: shouldForceSync && allowDbReset };
+    
+    console.log(`🔄 Syncing database (force: ${syncOptions.force})`);
+    await sequelize.sync(syncOptions);
+    console.log('✅ Database schema synchronized');
+  } catch (error) {
+    console.error('❌ Error syncing database:', error.message);
+    throw error;
   }
 };
 

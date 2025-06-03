@@ -18,13 +18,11 @@ const PORT = process.env.PORT || 5000;
     await testConnection();
     logger.info('Database connection successful');
     
-    // Step 2: Sync database models if in development mode
-    if (process.env.NODE_ENV === 'development') {
-      const forceSync = process.env.FORCE_DB_SYNC === 'true';
-      logger.info(`Syncing database models${forceSync ? ' with force option' : ''}...`);
-      await syncDatabase(forceSync);
-      logger.info('Database sync completed');
-    }
+    // Step 2: Sync database models (works in all environments)
+    const forceSync = process.env.FORCE_DB_SYNC === 'true';
+    logger.info(`Syncing database models${forceSync ? ' with force option' : ''}...`);
+    await syncDatabase(forceSync);
+    logger.info('Database sync completed');
     
     // Step 3: Start Express server
     const server = app.listen(PORT, () => {
