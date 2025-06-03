@@ -1,3 +1,5 @@
+// app.js
+
 // Load environment variables first
 require('dotenv').config();
 
@@ -35,18 +37,25 @@ const reportRoutes = require('./routes/report.routes');
 // Create Express app
 const app = express();
 
-// Security middleware
+// ────────────────────────────────────────────────────────────────────────────────
+//  Security middleware
+// ────────────────────────────────────────────────────────────────────────────────
 app.use(helmet());
-const cors = require('cors');
 
-// Dynamically allow frontend origin
+// ────────────────────────────────────────────────────────────────────────────────
+//  CORS configuration
+// ────────────────────────────────────────────────────────────────────────────────
+// Build an array of origins that are allowed to access your backend.
+// Include both local-dev and your deployed frontend domain(s).
 const allowedOrigins = [
   'http://localhost:3000',
-  'https://budget-project-management-frontend-sigma.vercel.app',
+  'https://budget-project-management-frontend-sigma.vercel.app'
 ];
 
+// CORS options
 const corsOptions = {
   origin: function (origin, callback) {
+    // If no origin (e.g. mobile/native clients) or origin is in our list, allow it.
     if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
@@ -60,48 +69,61 @@ const corsOptions = {
 
 app.use(cors(corsOptions));
 
-// Log CORS setup for debugging
+// Optional: log what origins are allowed (for debugging)
 console.log('🔒 CORS configured with allowed origins:', allowedOrigins);
+// ────────────────────────────────────────────────────────────────────────────────
 
-// Basic middleware
+// ────────────────────────────────────────────────────────────────────────────────
+//  Basic middleware
+// ────────────────────────────────────────────────────────────────────────────────
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(compression());
 
-// Logging middleware
-app.use(requestLogger || morgan('dev')); // Fallback to morgan if requestLogger isn't defined
+// ────────────────────────────────────────────────────────────────────────────────
+//  Logging middleware
+// ────────────────────────────────────────────────────────────────────────────────
+app.use(requestLogger || morgan('dev')); // Fallback to morgan if requestLogger isn’t defined
 
-// Rate limiting
-app.use('/api/auth', authLimiter); // Stricter rate limit for auth routes
-app.use('/api', limiter); // General rate limit for all API routes
+// ────────────────────────────────────────────────────────────────────────────────
+//  Rate limiting
+// ────────────────────────────────────────────────────────────────────────────────
+// Stricter rate limit for auth routes
+app.use('/api/auth', authLimiter);
+// General rate limit for all API routes
+app.use('/api', limiter);
 
-// Static files
+// ────────────────────────────────────────────────────────────────────────────────
+//  Static files
+// ────────────────────────────────────────────────────────────────────────────────
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
-// Authentication routes (no token required)
+// ────────────────────────────────────────────────────────────────────────────────
+//  Unprotected routes (no token required)
+// ────────────────────────────────────────────────────────────────────────────────
 app.use('/api/auth', authRoutes);
 app.use('/health', healthRoutes);
 
 // Root route
 app.get('/', (req, res) => {
-  res.json({ 
+  res.json({
     message: 'Welcome to Budget Project Management API',
     version: '1.0.0',
     status: 'active'
   });
 });
 
-// Protected API routes (token required)
-// All routes below this point require authentication
+// ────────────────────────────────────────────────────────────────────────────────
+//  Protected API routes (token required)
+// ────────────────────────────────────────────────────────────────────────────────
 app.use('/api', authenticateToken);
 
-// Primary entity routes
+// Primary entity routes (after authentication)
 app.use('/api/users', userRoutes);
 app.use('/api/projects', projectRoutes);
 app.use('/api/clients', clientRoutes);
 
-// Important: These routes have paths starting with /projects/:projectId in their route files
-// So we need to mount them at the /api root to maintain correct paths
+// These routes use "/api" prefix, so mount them directly under /api
 app.use('/api', taskRoutes);
 app.use('/api', budgetRoutes);
 app.use('/api', expenseRoutes);
@@ -110,17 +132,18 @@ app.use('/api', epicRoutes);
 app.use('/api', storyRoutes);
 app.use('/api', sprintRoutes);
 
-// These routes also have resource-specific endpoints
+// Resource-specific endpoints
 app.use('/api/comments', commentRoutes);
 app.use('/api', attachmentRoutes);
 app.use('/api/labels', labelRoutes);
 app.use('/api/search', searchRoutes);
 app.use('/api/reports', reportRoutes);
 
-// Error handling
+// ────────────────────────────────────────────────────────────────────────────────
+//  Error handling & 404
+// ────────────────────────────────────────────────────────────────────────────────
 app.use(errorHandler);
 
-// Handle 404 routes
 app.use((req, res) => {
   res.status(404).json({
     success: false,
@@ -129,4 +152,5 @@ app.use((req, res) => {
   });
 });
 
-module.exports = app; 
+// Export the configured Express app
+module.exports = app;
