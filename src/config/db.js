@@ -6,6 +6,13 @@ const { Sequelize, DataTypes } = require('sequelize')
 // Check if DATABASE_URL is provided (Railway provides this)
 const DATABASE_URL = process.env.DATABASE_URL;
 
+// Debug logging for DATABASE_URL (redacted for security)
+console.log('🔍 DATABASE_URL exists:', !!DATABASE_URL);
+if (DATABASE_URL) {
+  const maskedUrl = DATABASE_URL.replace(/:\/\/(.*?)@/, '://****:****@');
+  console.log('🔍 DATABASE_URL format:', maskedUrl);
+}
+
 let sequelize;
 
 if (DATABASE_URL) {
@@ -63,11 +70,23 @@ if (DATABASE_URL) {
 async function testConnection(retries = 3, delay = 1000) {
   for (let attempt = 1; attempt <= retries; attempt++) {
     try {
-      await sequelize.authenticate()
-      console.log('✅ Database connection established.')
-      return
+      console.log('🔄 Attempting to connect to database...');
+      if (DATABASE_URL) {
+        console.log('🔄 Using DATABASE_URL connection string');
+      } else {
+        console.log('🔄 Using individual connection parameters');
+        console.log('🔄 DB_NAME:', process.env.DB_NAME || 'default value');
+        console.log('🔄 DB_HOST:', process.env.DB_HOST || 'default value');
+        console.log('🔄 DB_PORT:', process.env.DB_PORT || 'default value');
+      }
+      
+      await sequelize.authenticate();
+      console.log('✅ Database connection established successfully.');
+      return true;
     } catch (err) {
-      console.error(`⚠️  DB connect attempt ${attempt}/${retries} failed:`, err.message)
+      console.error('❌ Unable to connect to the database:', err.message);
+      console.error('❌ Error name:', err.name);
+      console.error('❌ Error stack:', err.stack);
       if (attempt === retries) {
         throw new Error('❌ Unable to connect to the database after all retries')
       }
